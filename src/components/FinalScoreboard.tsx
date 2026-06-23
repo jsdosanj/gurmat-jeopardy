@@ -6,11 +6,12 @@ import { getWinners } from '../utils/gameLogic'
 type Props = {
   teams: Team[]
   onRestart: () => void
+  onTiebreaker: (tiedIndices: number[]) => void
 }
 
 const MEDALS = ['🥇', '🥈', '🥉']
 
-export default function FinalScoreboard({ teams, onRestart }: Props) {
+export default function FinalScoreboard({ teams, onRestart, onTiebreaker }: Props) {
   const sorted = [...teams].sort((a, b) => b.score - a.score)
   const winners = getWinners(teams)
 
@@ -24,6 +25,11 @@ export default function FinalScoreboard({ teams, onRestart }: Props) {
     })()
   }, [])
 
+  function handleTiebreaker() {
+    const tiedIndices = winners.map(w => teams.findIndex(t => t.id === w.id))
+    onTiebreaker(tiedIndices)
+  }
+
   return (
     <div className="w-screen h-screen bg-blue-950 flex flex-col items-center justify-center gap-10 p-8">
       <div className="text-center">
@@ -31,7 +37,7 @@ export default function FinalScoreboard({ teams, onRestart }: Props) {
           ਵਾਹਿਗੁਰੂ ਜੀ ਕਾ ਖਾਲਸਾ · ਵਾਹਿਗੁਰੂ ਜੀ ਕੀ ਫਤਿਹ
         </p>
         <h2 className="text-white font-black" style={{ fontSize: 'clamp(2.5rem, 7vw, 6rem)' }}>
-          {winners.length === 1 ? `${winners[0].name} Wins!` : 'It\'s a Tie!'}
+          {winners.length === 1 ? `${winners[0].name} Wins!` : "It's a Tie!"}
         </h2>
       </div>
 
@@ -53,12 +59,26 @@ export default function FinalScoreboard({ teams, onRestart }: Props) {
         })}
       </div>
 
-      <button
-        onClick={onRestart}
-        className="bg-blue-800 hover:bg-blue-700 text-white font-bold text-2xl px-12 py-5 rounded-2xl transition-colors mt-4"
-      >
-        Play Again
-      </button>
+      <div className="flex flex-col items-center gap-4">
+        {winners.length > 1 && (
+          <div className="flex flex-col items-center gap-3">
+            <p className="text-blue-300 text-xl">Break the tie with a Double or Nothing question?</p>
+            <button
+              onClick={handleTiebreaker}
+              className="bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-blue-950 font-black text-2xl px-12 py-4 rounded-2xl transition-colors shadow-xl"
+            >
+              🎲 Tiebreaker Round
+            </button>
+          </div>
+        )}
+
+        <button
+          onClick={onRestart}
+          className="bg-blue-800 hover:bg-blue-700 text-white font-bold text-2xl px-12 py-5 rounded-2xl transition-colors mt-2"
+        >
+          Play Again
+        </button>
+      </div>
     </div>
   )
 }

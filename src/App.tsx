@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import confetti from 'canvas-confetti'
 import type { Question, Team, GamePhase } from './types'
-import { initialQuestions } from './data/gameData'
+import { initialQuestions, tiebreakerQuestions } from './data/gameData'
 import { makeTeams, nextIndex } from './utils/gameLogic'
 import IntroScreen from './components/IntroScreen'
 import TeamSetup from './components/TeamSetup'
+import RulesScreen from './components/RulesScreen'
 import GameBoard from './components/GameBoard'
 import QuestionModal from './components/QuestionModal'
 import ControlPanel from './components/ControlPanel'
@@ -29,6 +30,12 @@ export default function App() {
   const [timerRunning, setTimerRunning] = useState(false)
   const [showAnswer, setShowAnswer] = useState(false)
 
+  // ID of the one hidden Double or Nothing question
+  const [doubleOrNothingId, setDoubleOrNothingId] = useState<string | null>(null)
+  // Tiebreaker state
+  const [isTiebreaker, setIsTiebreaker] = useState(false)
+  const [tiebreakerIdx, setTiebreakerIdx] = useState(0)
+
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Timer tick
@@ -44,9 +51,11 @@ export default function App() {
   }, [timerRunning])
 
   function openQuestion(q: Question) {
+    const isDN = q.id === doubleOrNothingId
     setCurrent(q)
     setAnsweringIdx(pickerIdx)
-    setRemaining(teams.map((_, i) => i).filter(i => i !== pickerIdx))
+    // D/N: no passing — picker is the only one who answers
+    setRemaining(isDN ? [] : teams.map((_, i) => i).filter(i => i !== pickerIdx))
     setTimeLeft(TIMER_SECONDS)
     setTimerRunning(true)
     setShowAnswer(false)
@@ -71,9 +80,27 @@ export default function App() {
 
   function handleCorrect() {
     if (!current) return
+    const isDN = current.id === doubleOrNothingId
+    const isSpecial = isDN || isTiebreaker
+
     setTeams(ts =>
-      ts.map((t, i) => i === answeringIdx ? { ...t, score: t.score + current.points } : t)
+      ts.map((t, i) => {
+        if (i !== answeringIdx) return t
+        if (isSpecial) return { ...t, score: Math.max(t.score * 2, t.score + 200) }
+        return { ...t, score: t.score + current.points }
+      })
     )
+
+    if (isTiebreaker) {
+      setIsTiebreaker(false)
+      setTimerRunning(false)
+      setCurrent(null)
+      setShowAnswer(false)
+      setPhase('final')
+      confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 }, colors: ['#f59e0b', '#ffffff', '#1e3a8a'] })
+      return
+    }
+
     markUsed()
     advancePicker()
     closeModal()
@@ -86,6 +113,36 @@ export default function App() {
   }
 
   function handleWrong() {
+    const isDN = current?.id === doubleOrNothingId
+
+    // D/N wrong: zero the score, no passing
+    if (isDN) {
+      setTeams(ts => ts.map((t, i) => i === answeringIdx ? { ...t, score: 0 } : t))
+      markUsed()
+      advancePicker()
+      closeModal()
+      return
+    }
+
+    // Tiebreaker wrong: zero the score, pass to next tied team or end
+    if (isTiebreaker) {
+      setTeams(ts => ts.map((t, i) => i === answeringIdx ? { ...t, score: 0 } : t))
+      if (remaining.length === 0) {
+        setIsTiebreaker(false)
+        setTimerRunning(false)
+        setCurrent(null)
+        setShowAnswer(false)
+        setPhase('final')
+        return
+      }
+      const [nextIdx, ...rest] = remaining
+      setAnsweringIdx(nextIdx)
+      setRemaining(rest)
+      setTimeLeft(TIMER_SECONDS)
+      return
+    }
+
+    // Normal wrong: pass to next team or close
     if (remaining.length === 0) {
       markUsed()
       advancePicker()
@@ -104,6 +161,19 @@ export default function App() {
     closeModal()
   }
 
+  function startTiebreaker(tiedIndices: number[]) {
+    const q = tiebreakerQuestions[tiebreakerIdx % tiebreakerQuestions.length]
+    setTiebreakerIdx(i => i + 1)
+    setCurrent(q)
+    setAnsweringIdx(tiedIndices[0])
+    setRemaining(tiedIndices.slice(1))
+    setTimeLeft(TIMER_SECONDS)
+    setTimerRunning(true)
+    setShowAnswer(false)
+    setIsTiebreaker(true)
+    setPhase('question')
+  }
+
   function handleRestart() {
     setQuestions(initialQuestions)
     setTeams([])
@@ -111,6 +181,9 @@ export default function App() {
     setAnsweringIdx(0)
     setRemaining([])
     setCurrent(null)
+    setDoubleOrNothingId(null)
+    setIsTiebreaker(false)
+    setTiebreakerIdx(0)
     setPhase('intro')
   }
 
@@ -120,14 +193,26 @@ export default function App() {
     return (
       <TeamSetup
         onSubmit={names => {
+          const qs = initialQuestions
+          const randomDN = qs[Math.floor(Math.random() * qs.length)]
+          setDoubleOrNothingId(randomDN.id)
           setTeams(makeTeams(names))
           setPickerIdx(0)
-          setPhase('board')
+          setPhase('rules')
         }}
       />
     )
 
-  if (phase === 'final') return <FinalScoreboard teams={teams} onRestart={handleRestart} />
+  if (phase === 'rules') return <RulesScreen onStart={() => setPhase('board')} />
+
+  if (phase === 'final')
+    return (
+      <FinalScoreboard
+        teams={teams}
+        onRestart={handleRestart}
+        onTiebreaker={startTiebreaker}
+      />
+    )
 
   return (
     <div className="w-screen h-screen bg-blue-900 flex flex-col overflow-hidden">
@@ -149,6 +234,8 @@ export default function App() {
           timeLeft={timeLeft}
           timerRunning={timerRunning}
           showAnswer={showAnswer}
+          isDoubleOrNothing={current.id === doubleOrNothingId}
+          isTiebreaker={isTiebreaker}
           onCorrect={handleCorrect}
           onWrong={handleWrong}
           onSkip={handleSkip}

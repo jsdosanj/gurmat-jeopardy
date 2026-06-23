@@ -6,6 +6,8 @@ type Props = {
   timeLeft: number
   timerRunning: boolean
   showAnswer: boolean
+  isDoubleOrNothing: boolean
+  isTiebreaker: boolean
   onCorrect: () => void
   onWrong: () => void
   onSkip: () => void
@@ -19,6 +21,8 @@ export default function QuestionModal({
   timeLeft,
   timerRunning,
   showAnswer,
+  isDoubleOrNothing,
+  isTiebreaker,
   onCorrect,
   onWrong,
   onSkip,
@@ -29,19 +33,45 @@ export default function QuestionModal({
   const timerColor =
     timeLeft > 15 ? 'bg-green-500' : timeLeft > 7 ? 'bg-amber-400' : 'bg-red-500'
 
+  const isSpecial = isDoubleOrNothing || isTiebreaker
+
   return (
     <div className="fixed inset-0 bg-blue-950/95 backdrop-blur-sm flex flex-col items-center justify-between p-8 z-50">
+      {/* Double or Nothing / Tiebreaker banner */}
+      {isSpecial && (
+        <div className="w-full max-w-4xl bg-amber-400 text-blue-950 rounded-2xl px-8 py-4 text-center shadow-2xl">
+          <p className="font-black tracking-widest uppercase" style={{ fontSize: 'clamp(1.5rem, 3vw, 2.5rem)' }}>
+            🎲 {isTiebreaker ? 'Tiebreaker — ' : ''}Double or Nothing!
+          </p>
+          <p className="font-semibold text-base opacity-75 mt-1">
+            {isTiebreaker
+              ? 'Correct = score doubles · Wrong = score goes to zero'
+              : 'Correct = score doubles · Wrong = lose everything'}
+          </p>
+        </div>
+      )}
+
       {/* Header */}
-      <div className="w-full flex items-center justify-between">
-        <div className="text-amber-400 font-bold text-2xl">
-          {question.category} · ${question.points}
+      {!isSpecial && (
+        <div className="w-full flex items-center justify-between">
+          <div className="text-amber-400 font-bold text-2xl">
+            {question.category} · ${question.points}
+          </div>
+          <div className={`px-6 py-2 rounded-xl text-xl font-black ${
+            answeringTeam ? 'bg-amber-400 text-blue-950' : 'bg-blue-800 text-white'
+          }`}>
+            {answeringTeam?.name ?? '—'}
+          </div>
         </div>
-        <div className={`px-6 py-2 rounded-xl text-xl font-black ${
-          answeringTeam ? 'bg-amber-400 text-blue-950' : 'bg-blue-800 text-white'
-        }`}>
-          {answeringTeam?.name ?? '—'}
+      )}
+
+      {isSpecial && (
+        <div className="w-full flex justify-end">
+          <div className="bg-blue-800 px-6 py-2 rounded-xl text-xl font-black text-white">
+            {answeringTeam?.name ?? '—'}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Timer bar */}
       <div className="w-full max-w-3xl">
@@ -78,13 +108,13 @@ export default function QuestionModal({
           onClick={onCorrect}
           className="bg-green-600 hover:bg-green-500 active:scale-95 text-white font-black text-2xl px-10 py-4 rounded-2xl transition-all shadow-lg"
         >
-          ✓ Correct
+          {isSpecial ? '✓ Correct — Double!' : '✓ Correct'}
         </button>
         <button
           onClick={onWrong}
           className="bg-red-600 hover:bg-red-500 active:scale-95 text-white font-black text-2xl px-10 py-4 rounded-2xl transition-all shadow-lg"
         >
-          ✗ Wrong / Pass
+          {isDoubleOrNothing ? '✗ Wrong — Lose All' : isTiebreaker ? '✗ Wrong — Lose All / Pass' : '✗ Wrong / Pass'}
         </button>
         <button
           onClick={onToggleAnswer}
@@ -98,12 +128,14 @@ export default function QuestionModal({
         >
           {timerRunning ? '⏸ Pause' : '▶ Resume'}
         </button>
-        <button
-          onClick={onSkip}
-          className="bg-blue-800 hover:bg-blue-700 active:scale-95 text-blue-300 font-bold text-xl px-8 py-4 rounded-2xl transition-all"
-        >
-          Skip
-        </button>
+        {!isDoubleOrNothing && (
+          <button
+            onClick={onSkip}
+            className="bg-blue-800 hover:bg-blue-700 active:scale-95 text-blue-300 font-bold text-xl px-8 py-4 rounded-2xl transition-all"
+          >
+            Skip
+          </button>
+        )}
       </div>
     </div>
   )

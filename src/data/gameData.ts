@@ -175,3 +175,38 @@ export const initialQuestions: Question[] = raw.map(q => ({
   id: `${q.category}-${q.points}`,
   used: false,
 }))
+
+export const tiebreakerQuestions: Question[] = [
+  {
+    id: 'tb1',
+    category: 'Tiebreaker',
+    points: 0,
+    clue: 'This sacred symbol — the very first character in ਸ੍ਰੀ ਗੁਰੂ ਗ੍ਰੰਥ ਸਾਹਿਬ ਜੀ — represents the One Creator.',
+    answer: 'ੴ (Ik Onkar)',
+    used: false,
+  },
+  {
+    id: 'tb2',
+    category: 'Tiebreaker',
+    points: 0,
+    clue: 'Guru Gobind Singh Ji established the Khalsa on Vaisakhi of this year at Anandpur Sahib.',
+    answer: '1699',
+    used: false,
+  },
+  {
+    id: 'tb3',
+    category: 'Tiebreaker',
+    points: 0,
+    clue: 'The five articles of faith worn by initiated Sikhs all begin with the letter "K" in Punjabi. What are they collectively called?',
+    answer: 'ਪੰਜ ਕਕਾਰ (Panj Kakars / The Five Ks)',
+    used: false,
+  },
+  {
+    id: 'tb4',
+    category: 'Tiebreaker',
+    points: 0,
+    clue: 'Guru Nanak Dev Ji composed this prayer at Ang 8 of ਸ੍ਰੀ ਗੁਰੂ ਗ੍ਰੰਥ ਸਾਹਿਬ ਜੀ describing 38 qualities of truly listening to the Lord\'s Name.',
+    answer: 'ਸੁਣਿਐ (Suniai)',
+    used: false,
+  },
+]

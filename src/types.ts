@@ -13,4 +13,4 @@ export type Team = {
   score: number;
 };
 
-export type GamePhase = 'intro' | 'teamSetup' | 'board' | 'question' | 'final';
+export type GamePhase = 'intro' | 'teamSetup' | 'rules' | 'board' | 'question' | 'final';

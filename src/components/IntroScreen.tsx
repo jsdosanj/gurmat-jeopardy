@@ -5,7 +5,7 @@ export default function IntroScreen({ onStart }: Props) {
     <div className="w-screen h-screen bg-blue-950 flex flex-col items-center justify-center gap-10">
       <div className="text-center">
         <p className="text-amber-400 text-3xl font-semibold tracking-widest uppercase mb-4">
-          Basics & Beyond · San Jose
+          San Jose · July 2026
         </p>
         <h1 className="text-white font-bold leading-none" style={{ fontSize: 'clamp(3rem, 10vw, 8rem)' }}>
           ਗੁਰਮਤਿ
